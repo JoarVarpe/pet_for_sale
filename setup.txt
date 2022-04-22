@@ -1,0 +1,11 @@
+sudo apt-get update && sudo apt-get install cmake libopenmpi-dev python3-dev zlib1g-dev
+sudo apt-get install swig
+pip3 install --upgrade pip
+conda install gxx_linux-64
+conda install mpi4py
+pip install stable-baselines[mpi]
+pip install pettingzoo[all]
+pip install "ray[rllib]" tensorflow torch
+pip install setproctitle
+# gym removed Monitor class and dependencies in recent update.
+pip install gym==0.22.0 
