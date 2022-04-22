@@ -59,7 +59,7 @@ if __name__ == "__main__":
     
     shutdown()
 
-    env_name = "fs_1r_3_rounds_game_ICM_v0"
+    env_name = "fs_1r_3_rounds_game_ICM_v1"
 
     register_env(env_name, lambda config: PettingZooEnv(env_creator(config)))
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # Specify, which exploration sub-type to use (usually, the algo's "default"
     # exploration, e.g. EpsilonGreedy for DQN, StochasticSampling for PG/SAC).
     "sub_exploration": {
-        "type": "StochasticSampling",
+        "type": "EpsilonGreedy",
     }
 }
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     tune.run(
         "PPO",
         name="PPO",
-        stop={"timesteps_total": 5000000},
+        stop={"timesteps_total": 5000000 * 20},
         checkpoint_freq=10,
         local_dir="~/ray_results/"+env_name,
         config=config,
