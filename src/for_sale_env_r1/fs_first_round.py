@@ -198,7 +198,7 @@ class for_sale_r2(AECEnv):
         self.agent_bids = {agent: 0 for agent in self.possible_agents}
 
         self.boards, self.stack = self._get_boards_and_stack(
-            self.total_rounds, 15)
+            self.total_rounds, 11)
 
         self.agent_cards = {agent: [] for agent in self.possible_agents}
         self.agent_coins = {
