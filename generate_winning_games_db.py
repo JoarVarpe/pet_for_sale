@@ -1,4 +1,5 @@
 import pickle
+from re import A
 from tabnanny import check
 import os
 from ray.rllib.models import ModelCatalog
@@ -142,31 +143,39 @@ if __name__ == "__main__":
 
     env.reset()
     print(env.last())
-    break
+    
     games = 10000
-    c = defaultdict(int)
+    games_to_save = []
     for game in tqdm.tqdm(range(games)):
+        g = defaultdict(list)
         env.reset()
 
+        winning_agents = []
         for agent in env.agent_iter():
             observation, reward, done, info = env.last()
             if done:
                 action = None
                 # env.render()
-            elif agent != smart_agent:
+            else:
                 action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
 
-            else:
-                # print(agent.get_policy_class("policy_0"))
-                # print(agent)
-                action = random.choice(np.flatnonzero(observation["action_mask"]))
+            if action != None:
+                g[agent].append((observation["observation"], action))
+            
 
             env.step(action)
             if reward == 1:
-                c[agent] += 1
+                winning_agents.append(agent)
+        
+        agent_to_save = random.choice(winning_agents)
+        games_to_save.extend(g[agent_to_save])
+
+    with open("/home/jaoi/master22/pet_for_sale/winning_games_db/{}_games.pkl".format(games), "wb") as fp:
+        pickle.dump(np.array(games_to_save), fp)
+    
+
         # print(agent, action)
     # print(agent.get_default_policy_class().get_weights())
     # agent.compute_action(test_env.reset())
     # print(agent.compute_single_action(test_env.reset()["player_0"]))
-    print(c)
     
