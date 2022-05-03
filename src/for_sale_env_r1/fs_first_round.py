@@ -14,13 +14,13 @@ from collections import deque
 import math
 
 
-def env():
+def env(rounds=3):
     '''
     The env function often wraps the environment in wrappers by default.
     You can find full documentation for these methods
     elsewhere in the developer documentation.
     '''
-    env = raw_env()
+    env = raw_env(rounds=rounds)
     # This wrapper is only for environments which print results to the terminal
     env = wrappers.CaptureStdoutWrapper(env)
     # this wrapper helps error handling for discrete action spaces
@@ -31,12 +31,12 @@ def env():
     return env
 
 
-def raw_env():
+def raw_env(rounds=3):
     '''
     To support the AEC API, the raw_env() function just uses the from_parallel
     function to convert from a ParallelEnv to an AEC env
     '''
-    env = for_sale_r2()
+    env = for_sale_r2(rounds=rounds)
     return env
 
 
@@ -128,13 +128,14 @@ class for_sale_r2(AECEnv):
     def _get_boards_and_stack(self, rounds, max_card=30):
         # insert 6 random cards and the cards decided for board in stack
         num_players = len(self.possible_agents)
+        amount_to_add = int(num_players * rounds * 0.25)
         if max_card > 30:
             max_card = 30
         list_of_currencies = [i for i in range(1, max_card + 1)]
         if rounds == 8:
             stack = random.sample(list_of_currencies, rounds * num_players)
         else:
-            stack = random.sample(list_of_currencies, rounds * num_players + 2)
+            stack = random.sample(list_of_currencies, rounds * num_players + amount_to_add)
         boards = iter([sorted(stack[r*3:r*3 + 3], reverse=True)
                        for r in range(rounds)])
         return boards, sorted(stack, reverse=True)
@@ -196,9 +197,9 @@ class for_sale_r2(AECEnv):
         Returns the observations for each agent
         '''
         self.agent_bids = {agent: 0 for agent in self.possible_agents}
-
+        amount_to_add = int(len(self.possible_agents) * self.total_rounds * 0.25)
         self.boards, self.stack = self._get_boards_and_stack(
-            self.total_rounds, 11)
+            self.total_rounds, self.total_rounds * len(self.possible_agents) + amount_to_add)
 
         self.agent_cards = {agent: [] for agent in self.possible_agents}
         self.agent_coins = {
