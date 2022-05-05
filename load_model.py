@@ -142,12 +142,11 @@ if __name__ == "__main__":
 
     env.reset()
     print(env.last())
-    break
+    
     games = 10000
     c = defaultdict(int)
     for game in tqdm.tqdm(range(games)):
         env.reset()
-
         for agent in env.agent_iter():
             observation, reward, done, info = env.last()
             if done:

@@ -122,5 +122,6 @@ if __name__ == "__main__":
         checkpoint_freq=10,
         local_dir="~/ray_results/"+env_name,
         config=config,
+
     )
     print("post tune.run")

@@ -213,7 +213,6 @@ class for_sale_r2(AECEnv):
         self._cumulative_rewards = {agent: 0 for agent in self.agents}
         self.observations = {agent: [] for agent in self.agents}
         self.num_rounds = 0
-        observations = {}
 
         board = next(self.boards)
         self.current_board = board

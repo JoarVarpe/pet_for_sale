@@ -144,7 +144,7 @@ if __name__ == "__main__":
     env.reset()
     print(env.last())
     
-    games = 10000
+    games = 100000
     games_to_save = []
     for game in tqdm.tqdm(range(games)):
         g = defaultdict(list)
@@ -171,7 +171,7 @@ if __name__ == "__main__":
         games_to_save.extend(g[agent_to_save])
 
     with open("/home/jaoi/master22/pet_for_sale/winning_games_db/{}_games.pkl".format(games), "wb") as fp:
-        pickle.dump(np.array(games_to_save), fp)
+        pickle.dump(np.array(games_to_save, dtype=object), fp)
     
 
         # print(agent, action)
