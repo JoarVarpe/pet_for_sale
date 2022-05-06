@@ -6,7 +6,6 @@ from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
 from for_sale_env_r1.fs_first_round import env as fs_env
 from ray.rllib.agents.ppo.ppo import DEFAULT_CONFIG as ppo_config
 import copy
-import supersuit as ss
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.models.torch.fcnet import FullyConnectedNetwork
 from ray import shutdown
@@ -15,12 +14,23 @@ from ray.rllib.utils.framework import try_import_torch
 
 torch, nn = try_import_torch()
 
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+if device == 'cuda':
+    gpu_count = torch.cuda.device_count()
+else:
+    gpu_count = 0
+
+
+rounds = 4
+stack_number = int((3 * rounds) * 1.25)
+observation_shape = (6 + rounds) * 3 + 4 + stack_number
+
 class DQN(TorchModelV2, nn.Module):
     def __init__(self, observational_space, action_spaces, num_outputs, *args, **kwargs):
         TorchModelV2.__init__(self, observational_space, action_spaces, num_outputs, *args, **kwargs)
         nn.Module.__init__(self)
         self.model = nn.Sequential(
-            nn.Linear(42, 256),
+            nn.Linear(observation_shape, 256),
             nn.ReLU(),
             nn.Linear(256, 256),
             nn.ReLU(),
@@ -33,21 +43,20 @@ class DQN(TorchModelV2, nn.Module):
     # Called with either one element to determine next action, or a batch
     # during optimization. Returns tensor([[left0exp,right0exp]...]).
     def forward(self, input_dict, state, seq_lens):
-        action_mask = input_dict["obs"]["action_mask"]
-        x = input_dict["obs"]["observation"]
-        model_out = self.model(x)
-        self._value_out = self.value_fn(model_out)
-        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX)
+        action_mask = input_dict["obs"]["action_mask"].to(device)
+        x = input_dict["obs"]["observation"].to(device)
+        model_out = self.model(x).to(device)
+        self._value_out = self.value_fn(model_out).to(device)
+        inf_mask = torch.clamp(torch.log(action_mask), FLOAT_MIN, FLOAT_MAX).to(device)
         # print(self.policy_fn(model_out) + inf_mask)
         return self.policy_fn(model_out) + inf_mask, state
-
     def value_function(self):
         return self._value_out.flatten()
 
 
 
 def env_creator(args):
-    env = fs_env(rounds=4)
+    env = fs_env(rounds=rounds)
     # env = ss.color_reduction_v0(env, mode='B')
     # env = ss.dtype_v0(env, 'float32')
     # env = ss.resize_v0(env, x_size=84, y_size=84)
@@ -86,9 +95,12 @@ if __name__ == "__main__":
     
         # Trying to use the ICM model
     config = ppo_config.copy()
+    config["num_gpus"] = gpu_count
     config["env"] = env_name
     config["framework"] = "torch"
     config["num_workers"] = 0
+    # if device == "cuda":
+    #     config["num_gpus_per_worker"] = 1
     config["multiagent"] = {
                 "policies": policies,
                 "policy_mapping_fn": (

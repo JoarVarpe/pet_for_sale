@@ -68,8 +68,10 @@ class for_sale_r2(AECEnv):
 
         # one action for each possible monetary bid, in addition to passing which is 0
         self.action_spaces = {i: spaces.Discrete(19) for i in self.agents}
+        stack_number = int((3 * rounds) * 1.25)
+        observation_shape = (6 + rounds) * 3 + 4 + stack_number
         self.observation_spaces = {i: spaces.Dict({
-            'observation': spaces.Box(low=0, high=30, shape=(42,), dtype=np.float32),
+            'observation': spaces.Box(low=0, high=30, shape=(observation_shape,), dtype=np.float32),
             'action_mask': spaces.Box(low=0, high=1, shape=(19,), dtype=np.float32)
         }) for i in self.agents}
         self.agent_cards = {agent: [] for agent in self.possible_agents}
