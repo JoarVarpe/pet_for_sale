@@ -138,12 +138,12 @@ if __name__ == "__main__":
     PPOagent = PPOTrainer(config=config)
     PPOagent.restore(checkpoint_file)
     env = fs_env()
-    smart_agent = "player"
+    smart_agent = "player_2"
 
     env.reset()
     print(env.last())
     
-    games = 10000
+    games = 1
     c = defaultdict(int)
     for game in tqdm.tqdm(range(games)):
         env.reset()
@@ -152,13 +152,16 @@ if __name__ == "__main__":
             if done:
                 action = None
                 # env.render()
-            elif agent != smart_agent:
+            elif agent == smart_agent:
                 action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
 
             else:
                 # print(agent.get_policy_class("policy_0"))
                 # print(agent)
-                action = random.choice(np.flatnonzero(observation["action_mask"]))
+                # action = random.choice(np.flatnonzero(observation["action_mask"]))
+                env.render()
+                
+                action = int(input("You are {}. Enter your bid -> ".format(agent)))
 
             env.step(action)
             if reward == 1:
@@ -167,5 +170,6 @@ if __name__ == "__main__":
     # print(agent.get_default_policy_class().get_weights())
     # agent.compute_action(test_env.reset())
     # print(agent.compute_single_action(test_env.reset()["player_0"]))
+    env.render()
     print(c)
     
