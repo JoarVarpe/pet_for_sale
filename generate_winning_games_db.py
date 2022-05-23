@@ -60,10 +60,10 @@ class DQN(TorchModelV2, nn.Module):
 #         self.model = nn.Sequential(
 #             nn.Linear(42, 256),
 #             nn.ReLU(),
-#             nn.Linear(256, 512),
+#             nn.Linear(256, 256),
 #             nn.ReLU())
-#         self.policy_fn = nn.Linear(512, num_outputs)
-#         self.value_fn = nn.Linear(512, 1)
+#         self.policy_fn = nn.Linear(256, num_outputs)
+#         self.value_fn = nn.Linear(256, 1)
 
 
 #     # Called with either one element to determine next action, or a batch
@@ -162,7 +162,9 @@ config_icm["exploration_config"] = {
 
 
 # checkpoint_file = "/home/jaoi/ray_results/fs_1r_3_rounds_game_ICM_v1/PPO/PPO_fs_1r_3_rounds_game_ICM_v1_4fe38_00000_0_2022-04-22_13-14-01/checkpoint_012090/checkpoint-12090"
+# checkpoint_file = "/home/jaoi/imported_models/PPO3r_v0/checkpoint_025000/checkpoint-25000"
 checkpoint_file = "/home/jaoi/imported_models/PPO4r_v0/checkpoint_025000/checkpoint-25000"
+
 checkpoint_file_1 = "/home/jaoi/imported_models/PPO4r_v1/checkpoint_025000/checkpoint-25000"
 checkpoint_file_2 = "/home/jaoi/imported_models/ICM4r_v0/checkpoint_025000/checkpoint-25000"
 
@@ -182,17 +184,17 @@ def rand_policy(observation, agent):
     action = random.choice(np.flatnonzero(observation['action_mask']))
     return action
 
-player_models = {}
-player_models["ICMv0"] = PPOTrainer(config=config_icm)
-player_models["ICMv0"].restore(checkpoint_file_2)
-player_models["PPOv0"] = PPOTrainer(config=config)
-player_models["PPOv0"].restore(checkpoint_file)
-player_models["PPOv1"] = PPOTrainer(config=config)
-player_models["PPOv1"].restore(checkpoint_file_1)
+# player_models = {}
+# player_models["ICMv0"] = PPOTrainer(config=config_icm)
+# player_models["ICMv0"].restore(checkpoint_file_2)
+# player_models["PPOv0"] = PPOTrainer(config=config)
+# player_models["PPOv0"].restore(checkpoint_file)
+# player_models["PPOv1"] = PPOTrainer(config=config)
+# player_models["PPOv1"].restore(checkpoint_file_1)
 
 
-model_names = ["ICMv0", "PPOv0", "PPOv1"]
-players_perms = permutations(model_names)
+# model_names = ["ICMv0", "PPOv0", "PPOv1"]
+# players_perms = permutations(model_names)
 
 def compare_agents(model_names, player_models, env, games):
     model_perms = permutations(model_names)
@@ -211,7 +213,9 @@ def compare_agents(model_names, player_models, env, games):
                 observation, reward, done, info = env.last()
                 if done:
                     action = None
-                
+                elif agent_to_model_dict[agent] == "ICMv0":
+                    # action = rand_policy(observation, agent)
+                    action, _, _ = player_models["PPOv0"].get_policy("policy_0").compute_single_action(observation)
                 else:
                     action, _, _ = player_models[agent_to_model_dict[agent]].get_policy("policy_0").compute_single_action(observation)
 
@@ -236,49 +240,51 @@ if __name__ == "__main__":
     # config = ppo_config.copy()
     # config["env"] = env_name
     # config["framework"] = "torch"
-    # PPOagent = PPOTrainer(config=config)
-    # PPOagent.restore(checkpoint_file)
-    print(player_models["ICMv0"])
+    PPOagent = PPOTrainer(config=config)
+    PPOagent.restore(checkpoint_file)
     env = fs_env(rounds=4)
-    smart_agent = "player_1"
+    smart_agent = "player"
 
     env.reset()
-    print(env.last())
     
-    games = 1000
-    compare_agents(model_names, player_models, env, games)
-    # games_to_save = []
-    # c = Counter()
-    # for game in tqdm.tqdm(range(games)):
-    #     g = defaultdict(list)
-    #     env.reset()
+    games = 1000000
+    # compare_agents(model_names, player_models, env, games)
+    games_to_save = []
+    c = Counter()
+    for game in tqdm.tqdm(range(games)):
+        g = defaultdict(list)
+        env.reset()
 
-    #     winning_agents = []
-    #     for agent in env.agent_iter():
-    #         observation, reward, done, info = env.last()
-    #         if done:
-    #             action = None
-    #             # env.render()
-    #         elif agent != smart_agent:
-    #             action = rand_policy(observation, agent)
-    #         else:
-    #             action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
+        winning_agents = []
+        for agent in env.agent_iter():
+            observation, reward, done, info = env.last()
+            if done:
+                action = None
+                # env.render()
+            elif agent != smart_agent:
+                # action = rand_policy(observation, agent)
+                action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
 
-    #         if action != None:
-    #             g[agent].append((observation["observation"], action))
+            else:
+                # action, _, _ = player_models["ICMv0"].get_policy("policy_0").compute_single_action(observation)
+                action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
+
+
+            if action != None:
+                g[agent].append((observation["observation"], action))
             
 
-    #         env.step(action)
-    #         if reward == 1:
-    #             winning_agents.append(agent)
-    #             c[agent] += 1
+            env.step(action)
+            if reward == 1:
+                winning_agents.append(agent)
+                c[agent] += 1
         
-    #     agent_to_save = random.choice(winning_agents)
-    #     games_to_save.extend(g[agent_to_save])
-    # print(c)
+        agent_to_save = random.choice(winning_agents)
+        games_to_save.extend(g[agent_to_save])
+    print(c)
 
-    # with open("/home/jaoi/master22/pet_for_sale/winning_games_db/4PPO_{}_games.pkl".format(games), "wb") as fp:
-    #     pickle.dump(np.array(games_to_save, dtype=object), fp)
+    with open("/home/jaoi/master22/pet_for_sale/winning_games_db/4PPO_{}_games.pkl".format(games), "wb") as fp:
+        pickle.dump(np.array(games_to_save, dtype=object), fp)
     
 
         # print(agent, action)
