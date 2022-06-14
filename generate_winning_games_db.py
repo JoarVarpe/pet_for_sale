@@ -240,14 +240,14 @@ if __name__ == "__main__":
     # config = ppo_config.copy()
     # config["env"] = env_name
     # config["framework"] = "torch"
-    PPOagent = PPOTrainer(config=config)
-    PPOagent.restore(checkpoint_file)
+    PPOagent = PPOTrainer(config=config_icm)
+    PPOagent.restore(checkpoint_file_2)
     env = fs_env(rounds=4)
     smart_agent = "player"
 
     env.reset()
     
-    games = 1000000
+    games = 100000
     # compare_agents(model_names, player_models, env, games)
     games_to_save = []
     c = Counter()
@@ -261,9 +261,16 @@ if __name__ == "__main__":
             if done:
                 action = None
                 # env.render()
-            elif agent != smart_agent:
+            # elif agent != smart_agent:
                 # action = rand_policy(observation, agent)
-                action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
+                # action, _, _ = PPOagent.get_policy("policy_0").compute_single_action(observation)
+                # print(observation["observation"])
+                # env.render()
+                
+                # action = int(input())
+                # while action not in observation["action_mask"]:
+                #     print("you can't do {}".format(action))
+                #     action = int(input())
 
             else:
                 # action, _, _ = player_models["ICMv0"].get_policy("policy_0").compute_single_action(observation)
@@ -283,7 +290,7 @@ if __name__ == "__main__":
         games_to_save.extend(g[agent_to_save])
     print(c)
 
-    with open("/home/jaoi/master22/pet_for_sale/winning_games_db/4PPO_{}_games.pkl".format(games), "wb") as fp:
+    with open("/home/jaoi/master22/pet_for_sale/winning_games_db/4ICM_{}_games.pkl".format(games), "wb") as fp:
         pickle.dump(np.array(games_to_save, dtype=object), fp)
     
 
